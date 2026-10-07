@@ -1,181 +1,219 @@
 # CRM Association Verifier
 
-> A read-only verification layer for CRM workflows that checks record identity and associations before downstream automation is trusted.
+A small, read-only Cloudflare Worker that verifies CRM record relationships before downstream automation is trusted.
 
-## Overview
+This repository is a **sanitized portfolio version of a real operating control**. It demonstrates the design and tested logic without publishing production credentials, live account identifiers, customer data, or internal business configuration.
 
-CRM automation is only as reliable as the data and relationships underneath it.
+## Why this exists
 
-A workflow can execute exactly as designed and still produce the wrong outcome if the underlying record is incomplete, linked to the wrong entity, or missing an expected relationship. This project was built to add an independent verification step before downstream workflow state is treated as trustworthy.
+Automation can execute exactly as designed and still make the wrong decision when the underlying data is incomplete or incorrectly associated.
 
-The verifier is deliberately **read-only** and **fail-closed**. It does not repair uncertain data or force a workflow forward. When evidence is incomplete, inconsistent, or ambiguous, the safe outcome is to stop and surface the case for review.
+This verifier adds an independent control step before a workflow treats a Property ↔ Contact ↔ Opportunity relationship as trustworthy.
 
-## The business problem
+**Design principle: automate the predictable path, fail closed on uncertainty, and send ambiguous cases to human review.**
 
-In a multi-record CRM process, downstream actions may depend on relationships between records such as:
-
-- a primary business record
-- the correct contact
-- the correct commercial opportunity
-
-The normal workflow is straightforward when every identifier and association is correct. The difficult cases are the exceptions:
-
-- a record exists, but an expected identifier is missing
-- a contact or opportunity does not match the expected ID
-- a required relationship is absent
-- the CRM API returns an error or malformed response
-- the available evidence is not strong enough to prove the relationship safely
-
-If those cases are treated as successful, automation can scale bad decisions just as efficiently as good ones.
-
-## Design goal
-
-**Automate the predictable path. Stop on ambiguity. Verify before trust.**
-
-The verifier acts as an independent control layer:
+## Architecture
 
 ```mermaid
 flowchart LR
     A[Workflow / Caller] --> B[Read-only Verifier]
-    B --> C[Retrieve CRM Record]
-    C --> D[Validate Expected Identity]
-    D --> E[Retrieve Associations]
-    E --> F[Compare Actual vs Expected]
-    F -->|All checks pass| G[VERIFIED]
-    F -->|Missing / mismatched / ambiguous| H[FAIL CLOSED]
-    H --> I[Human Review]
+    B --> C[Read Contact Associations]
+    B --> D[Read Opportunity Associations]
+    C --> E[Find Related Property IDs]
+    D --> E
+    E --> F[Find Common Property]
+    F --> G[Fetch Property Record]
+    G --> H{Identity + associations match?}
+    H -->|Yes| I[VERIFIED]
+    H -->|No / incomplete / error| J[FAILED]
+    J --> K[Human Review]
 ```
 
-No CRM write is required to reach the verification result.
+The verifier makes **GET requests only** to the CRM API. It does not create, edit, delete, or re-associate CRM records.
 
-## What the verifier checks
+## What it verifies
 
-At a high level, the service:
+For a request containing:
 
-1. receives the expected record identifiers
-2. retrieves the relevant CRM record
-3. validates identity fields against the expected values
-4. retrieves the record's relationships
-5. confirms that the expected contact relationship exists
-6. confirms that the expected opportunity relationship exists
-7. returns a verification result only when the required evidence is present and consistent
+- `propertyIdentityKey`
+- `expectedContactId`
+- `expectedOpportunityId`
+
+the service:
+
+1. reads the Contact's CRM associations
+2. reads the Opportunity's CRM associations
+3. identifies Property records related to each
+4. requires the Contact and Opportunity to resolve to the same Property
+5. fetches the candidate Property record
+6. compares the stored identity key exactly with the expected identity key
+7. returns `VERIFIED` only when all required evidence is present and consistent
 
 ## Fail-closed behaviour
 
-A successful verification should require positive evidence.
-
-| Condition | Expected behaviour |
+| Condition | Result |
 | --- | --- |
-| Record found and expected relationships match | **VERIFIED** |
-| Required identity value missing | **FAIL CLOSED** |
-| Contact identity mismatch | **FAIL CLOSED** |
-| Opportunity identity mismatch | **FAIL CLOSED** |
-| Expected relationship missing | **FAIL CLOSED** |
-| CRM/API error | **FAIL CLOSED** |
-| Malformed or incomplete response | **FAIL CLOSED** |
-| Evidence is ambiguous | **REVIEW / DO NOT ADVANCE** |
+| Exact associations + exact identity | `VERIFIED` |
+| Contact relation missing | `FAILED` |
+| Opportunity relation missing | `FAILED` |
+| Contact and Opportunity resolve to different Properties | `FAILED` |
+| Property identity mismatch | `FAILED` |
+| API error or timeout | `FAILED` |
+| Malformed / incomplete response | `FAILED` |
+| Pagination cannot be proven complete | `FAILED` |
+| Ambiguous multiple matches | `FAILED` |
 
-The important principle is that an error is not treated as a pass.
+An upstream error is never treated as a successful verification.
 
-## Why read-only matters
+## Safety controls
 
-The verifier is intentionally separated from the workflow that performs operational changes.
+The implementation includes:
 
-That separation reduces the risk that a verification component can accidentally:
+- read-only upstream requests
+- fixed upstream API origin
+- redirects rejected
+- bounded request and total verification time
+- response-size limits
+- bounded pagination
+- duplicate/repeated-relation detection
+- required total-count consistency checks
+- exact object-orientation checks
+- exact identity comparison
+- authentication on the verifier endpoint
+- credential- and identifier-free decision logging
+- failure isolation so logging cannot change the verification outcome
 
-- overwrite CRM data
-- create or alter relationships
-- advance workflow state
-- trigger downstream communications
-- hide an upstream data-quality problem by "fixing" it silently
+## Endpoint
 
-Verification and mutation are different responsibilities.
+```text
+POST /verify-property-associations
+```
 
-## Human-in-the-loop control
+Example request:
 
-Not every exception should be automated away.
+```bash
+curl -X POST "https://YOUR_WORKER_URL/verify-property-associations" \
+  -H "Authorization: Bearer YOUR_VERIFIER_SHARED_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "propertyIdentityKey": "EXAMPLE-PROPERTY-KEY",
+    "expectedContactId": "EXAMPLE-CONTACT-ID",
+    "expectedOpportunityId": "EXAMPLE-OPPORTUNITY-ID"
+  }'
+```
 
-Some cases require judgement because the available evidence is genuinely ambiguous. In those situations, the system should make the uncertainty visible rather than manufacture confidence.
+Successful verification:
 
-The operating principle is:
+```json
+{
+  "verifierResult": "VERIFIED",
+  "verifiedPropertyId": "example-property-id",
+  "reason": "EXACT_ASSOCIATIONS_CONFIRMED"
+}
+```
 
-> **High-confidence routine case → automate**  
-> **Low-confidence or conflicting evidence → stop and review**
+A failed verification returns `FAILED` with a reason code and no verified Property ID.
 
-This is the same control philosophy I am applying more broadly to AI-enabled revenue and operations workflows.
+## Configuration
+
+Runtime values are injected through environment bindings. No production values belong in source control.
+
+Required values:
+
+| Binding | Purpose |
+| --- | --- |
+| `GHL_READ_ONLY_TOKEN` | Read-only CRM API token |
+| `VERIFIER_SHARED_SECRET` | Authenticates requests to the verifier |
+| `GHL_LOCATION_ID` | CRM location/account identifier |
+
+For local development, copy the example file:
+
+```bash
+cp .dev.vars.example .dev.vars
+```
+
+Then replace the placeholders locally. `.dev.vars` is git-ignored.
+
+## Run locally
+
+Requirements:
+
+- Node.js 22+
+- Wrangler
+
+Install and test:
+
+```bash
+npm install
+npm test
+npm run check:deploy
+```
+
+Start a local Worker:
+
+```bash
+npm run dev
+```
+
+## Test evidence
+
+The sanitized portfolio copy passes the full suite:
+
+```text
+41 tests
+41 passed
+0 failed
+```
+
+Coverage includes successful verification, wrong Contact/Opportunity relationships, different Properties, identity mismatch, malformed JSON, malformed upstream responses, reversed relation orientation, upstream 401/403/500 responses, timeouts, network errors, authentication failure, multi-page association scans, pagination safety limits, repeated pages, inconsistent totals, multiple candidate Properties, credential-safe logging, and failures after an earlier partial match.
+
+## Repository structure
+
+```text
+.
+├── src/
+│   └── worker.js
+├── test/
+│   └── worker.test.js
+├── .dev.vars.example
+├── .gitignore
+├── package.json
+├── wrangler.toml
+└── README.md
+```
 
 ## Validation status
 
-| Area | Status |
-| --- | --- |
-| Core verification logic | Built |
-| Read-only architecture | Built |
-| Fail-closed conditions | Built and tested |
-| Unit tests | **41 passed / 0 failed** |
-| Packaging / Wrangler dry run | Passed |
-| Live end-to-end production certification | **Still outstanding** |
+**Built and tested**
 
-This distinction is intentional. The project is presented as tested verification logic, **not** as fully production-certified until live end-to-end validation is complete.
+- core verification logic
+- read-only architecture
+- fail-closed behaviour
+- 41-test unit suite
+
+**Not claimed**
+
+- full live end-to-end production certification of this sanitized portfolio copy
+
+The original operating project was intentionally documented with the same distinction: tested logic is not presented as production-certified until the complete live path is validated.
 
 ## What this project demonstrates
 
-### Technical-commercial capability
+This is less about writing a large amount of code and more about designing a reliable control around a commercial workflow:
 
-- API-based verification
-- CRM relationship validation
-- structured-data handling
-- identity and association checks
+- API integration
+- structured-data validation
+- CRM relationship modelling
 - exception handling
-- fail-safe workflow design
-- human-review gates
-- test-driven validation
-- separation of read and write responsibilities
-
-### Systems thinking
-
-The project started with an operating problem rather than a coding exercise:
-
-**How do you scale automation without allowing uncertain data to create confident downstream actions?**
-
-The answer was not simply "add more automation." It was to introduce an independent control layer with explicit decision boundaries.
-
-## Broader architecture principle
-
-The project sits inside a wider commercial-systems approach:
-
-```text
-Business problem
-      ↓
-Process definition
-      ↓
-Structured data
-      ↓
-Workflow automation
-      ↓
-Independent verification
-      ↓
-Human review where needed
-      ↓
-Measured iteration
-```
-
-That pattern is increasingly relevant to agentic and AI-enabled workflows, where the cost of an incorrect automated action can be higher than the cost of pausing for review.
-
-## Current project status
-
-This repository is currently **private** while the implementation is being prepared for portfolio use.
-
-Before any public release:
-
-- live credentials and secrets will remain excluded
-- customer and contact data will remain excluded
-- internal identifiers will be removed or replaced with safe examples
-- configuration will be documented using placeholders
-- claims will remain limited to what has actually been tested
+- verification boundaries
+- human-in-the-loop design
+- test discipline
+- security-minded failure behaviour
+- translating an operating problem into an auditable technical control
 
 ## Author
 
 **Joel Gabriel Pascal**  
 Enterprise GTM & Strategic Sales | AI | SaaS | APIs | Data | Revenue Systems
 
-This project is part of a broader body of work focused on the intersection of enterprise commercial execution, CRM architecture, automation, verification controls, and practical AI-enabled operating systems.
+My broader work focuses on the commercial-technical layer between enterprise GTM, CRM/revenue systems, automation, APIs, verification controls, and practical AI-enabled workflows.

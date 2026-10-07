@@ -1,0 +1,13 @@
+name = "crm-association-verifier"
+main = "src/worker.js"
+compatibility_date = "2026-10-02"
+workers_dev = true
+preview_urls = true
+
+[secrets]
+required = ["GHL_READ_ONLY_TOKEN", "VERIFIER_SHARED_SECRET"]
+
+[observability]
+enabled = true
+
+[previews]

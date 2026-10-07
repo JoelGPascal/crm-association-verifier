@@ -1,0 +1,10 @@
+node_modules/
+.pnpm-store/
+.wrangler/
+.dev.vars
+.dev.vars.*
+.env
+.env.*
+dist/
+
+!.dev.vars.example

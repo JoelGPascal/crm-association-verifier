@@ -1,0 +1,3 @@
+GHL_READ_ONLY_TOKEN=replace-with-read-only-token
+VERIFIER_SHARED_SECRET=replace-with-random-shared-secret
+GHL_LOCATION_ID=replace-with-location-id
