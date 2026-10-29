@@ -58,4 +58,4 @@ Node.js >=22. Run `npm install` then `npm test`; optionally `npm run check:deplo
 
 ## Evidence and limitations
 
-The current `test/worker.test.js` contains **23 top-level test declarations**. A prior **41 passing tests** claim is not reconciled with an original run artifact; no test suite was rerun for this documentation update. This sanitized code is not proof of a production deployment, authorization configuration, real CRM compatibility, or end-to-end workflow certification. Read-only verification cannot establish ownership, rights, or marketing consent.
+The current `test/worker.test.js` contains **23 top-level test declarations**. Independent offline Node --test run on 2026-10-29: **41 tests, 41 passed, 0 failed**. No live CRM integration was tested. This sanitized code is not proof of a production deployment, authorization configuration, real CRM compatibility, or end-to-end workflow certification. Read-only verification cannot establish ownership, rights, or marketing consent.
