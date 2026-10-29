@@ -160,8 +160,8 @@ npm run dev
 The sanitized portfolio copy passes the full suite:
 
 ```text
-41 tests
-41 passed
+23 source-defined tests (execution not rerun in the October 29 evidence review)
+Historical 41-pass claim requires a matching run artifact; current source contains 23 test declarations
 0 failed
 ```
 
@@ -189,7 +189,7 @@ Coverage includes successful verification, wrong Contact/Opportunity relationshi
 - core verification logic
 - read-only architecture
 - fail-closed behaviour
-- 41-test unit suite
+- 23 source-defined test cases; historical 41-pass claim awaiting reconciliation
 
 **Not claimed**
 
