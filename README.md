@@ -224,3 +224,5 @@ My broader work focuses on the commercial-technical layer between enterprise GTM
 - [Synthetic request/response demonstration and local commands](docs/synthetic-demo.md)
 
 These are documentation examples and source inspection, not new test executions or production certification.
+
+- [Security and operational readiness checkpoint (2026-10-29)](docs/READINESS_2026-10-29.md)
