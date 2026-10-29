@@ -217,3 +217,10 @@ This is less about writing a large amount of code and more about designing a rel
 Enterprise GTM & Strategic Sales | AI | SaaS | APIs | Data | Revenue Systems
 
 My broader work focuses on the commercial-technical layer between enterprise GTM, CRM/revenue systems, automation, APIs, verification controls, and practical AI-enabled workflows.
+
+## Engineering review package (2026-10-29)
+
+- [Architecture, trust boundaries, failure decisions](docs/architecture.md)
+- [Synthetic request/response demonstration and local commands](docs/synthetic-demo.md)
+
+These are documentation examples and source inspection, not new test executions or production certification.
