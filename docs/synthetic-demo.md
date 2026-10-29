@@ -44,4 +44,4 @@ npm test
 npm run check:deploy
 ```
 
-The unit tests use mocked upstream responses. Do not paste real secrets or customer identifiers into a demo, and do not deploy to run these tests. The source currently defines **23 top-level test cases**; the historical claim of 41 passing tests remains pending source-to-run reconciliation. Commands above have **not** been executed during this documentation change.
+The unit tests use mocked upstream responses. Do not paste real secrets or customer identifiers into a demo, and do not deploy to run these tests. The source currently defines **23 top-level test cases**; an independent offline Node --test run on 2026-10-29 reported 41 tests, 41 passed, 0 failed. The Node test suite was run independently; the Wrangler dry-run deployment command was not run.
