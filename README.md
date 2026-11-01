@@ -1,8 +1,18 @@
 # CRM Association Verifier
 
-A small, read-only Cloudflare Worker that verifies CRM record relationships before downstream automation is trusted.
+A read-only control that checks whether a CRM contact and opportunity point to the correct property before downstream automation proceeds.
 
-This repository is a **sanitized portfolio version of a real operating control**. It demonstrates the design and tested logic without publishing production credentials, live account identifiers, customer data, or internal business configuration.
+## Project summary
+
+**Problem:** Incorrect record associations can send an otherwise correct workflow down the wrong commercial path.
+
+**My contribution:** I defined the business requirements, exact matching rules and human-review path, and directed AI-assisted implementation and validation.
+
+**Demonstrated result:** The sanitized public version records 41 passing offline tests reproduced on October 29, 2026. Matching records can be verified; missing, conflicting or ambiguous evidence returns a failure for review.
+
+**Start here:** [Runnable example](docs/synthetic-demo.md) · [Architecture](docs/architecture.md) · [Commercial context](docs/COMMERCIAL_CONTEXT.md)
+
+This portfolio copy excludes live account identifiers, credentials and customer data. Live end-to-end CRM deployment remains unverified.
 
 ## Why this exists
 
@@ -184,18 +194,7 @@ Coverage includes successful verification, wrong Contact/Opportunity relationshi
 
 ## Validation status
 
-**Built and tested**
-
-- core verification logic
-- read-only architecture
-- fail-closed behaviour
-- 41/41 tests independently reproduced offline on 2026-10-29
-
-**Not claimed**
-
-- full live end-to-end production certification of this sanitized portfolio copy
-
-The original operating project was intentionally documented with the same distinction: tested logic is not presented as production-certified until the complete live path is validated.
+The core matching and failure-handling logic was tested offline; the dated result is above. Production integration of this sanitized copy remains unverified.
 
 ## What this project demonstrates
 
