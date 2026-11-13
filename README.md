@@ -1,227 +1,46 @@
 # CRM Association Verifier
 
-A read-only control that checks whether a CRM contact and opportunity point to the correct property before downstream automation proceeds.
+[![tests](https://github.com/JoelGPascal/crm-association-verifier/actions/workflows/tests.yml/badge.svg)](https://github.com/JoelGPascal/crm-association-verifier/actions/workflows/tests.yml)
 
-## Project summary
+A read-only check that confirms a CRM contact and opportunity point to the correct property before any automation acts on them.
 
-**Problem:** Incorrect record associations can send an otherwise correct workflow down the wrong commercial path.
+## The problem
 
-**My contribution:** I defined the business requirements, exact matching rules and human-review path, and directed AI-assisted implementation and validation.
+In my real estate business, CRM workflows act on linked records: a buyer (contact), a deal (opportunity) and a property. Automation can run exactly as designed and still do the wrong thing if those links are missing or wrong, for example sending a buyer details for a different property.
 
-**Demonstrated result:** The sanitized public version records 41 passing offline tests reproduced on October 29, 2026. Matching records can be verified; missing, conflicting or ambiguous evidence returns a failure for review.
+## What I built
 
-**Start here:** [Runnable example](docs/synthetic-demo.md) · [Architecture](docs/architecture.md) · [Commercial context](docs/COMMERCIAL_CONTEXT.md)
+A small service that sits in front of the workflow and answers one question: *are these three records really linked to each other?*
 
-This portfolio copy excludes live account identifiers, credentials and customer data. Live end-to-end CRM deployment remains unverified.
+- Reads the CRM only. It never creates, edits or deletes records
+- Returns `VERIFIED` only when every link and the property ID match exactly
+- Anything missing, conflicting, ambiguous or erroring returns `FAILED` and goes to a person for review
 
-## Why this exists
-
-Automation can execute exactly as designed and still make the wrong decision when the underlying data is incomplete or incorrectly associated.
-
-This verifier adds an independent control step before a workflow treats a Property ↔ Contact ↔ Opportunity relationship as trustworthy.
-
-**Design principle: automate the predictable path, fail closed on uncertainty, and send ambiguous cases to human review.**
-
-## Architecture
+**Design rule: automate the predictable path, fail closed on uncertainty, send the rest to a human.**
 
 ```mermaid
 flowchart LR
-    A[Workflow / Caller] --> B[Read-only Verifier]
-    B --> C[Read Contact Associations]
-    B --> D[Read Opportunity Associations]
-    C --> E[Find Related Property IDs]
-    D --> E
-    E --> F[Find Common Property]
-    F --> G[Fetch Property Record]
-    G --> H{Identity + associations match?}
-    H -->|Yes| I[VERIFIED]
-    H -->|No / incomplete / error| J[FAILED]
-    J --> K[Human Review]
+    A[CRM workflow] --> B[Verifier]
+    B --> C{Contact, opportunity and property all match?}
+    C -->|Yes| D[VERIFIED: workflow continues]
+    C -->|No / unclear / error| E[FAILED: human review]
 ```
 
-The verifier makes **GET requests only** to the CRM API. It does not create, edit, delete, or re-associate CRM records.
+## My role
 
-## What it verifies
+I defined the business problem, the exact matching rules and the human-review path, then directed AI-assisted implementation and testing.
 
-For a request containing:
+## Result
 
-- `propertyIdentityKey`
-- `expectedContactId`
-- `expectedOpportunityId`
+41 automated tests cover the success case and every failure path: wrong links, mismatched IDs, API errors, timeouts and incomplete data. They run on every push (see the badge above).
 
-the service:
+**Stack:** JavaScript · Cloudflare Workers · GoHighLevel CRM API
 
-1. reads the Contact's CRM associations
-2. reads the Opportunity's CRM associations
-3. identifies Property records related to each
-4. requires the Contact and Opportunity to resolve to the same Property
-5. fetches the candidate Property record
-6. compares the stored identity key exactly with the expected identity key
-7. returns `VERIFIED` only when all required evidence is present and consistent
+## Technical details
 
-## Fail-closed behaviour
+- [Technical reference](docs/technical-reference.md): endpoint, failure table, safety controls, configuration, running locally
+- [Architecture](docs/architecture.md) · [Runnable demo](docs/synthetic-demo.md) · [Commercial context](docs/COMMERCIAL_CONTEXT.md) · [Readiness checkpoint](docs/READINESS_2026-10-29.md)
 
-| Condition | Result |
-| --- | --- |
-| Exact associations + exact identity | `VERIFIED` |
-| Contact relation missing | `FAILED` |
-| Opportunity relation missing | `FAILED` |
-| Contact and Opportunity resolve to different Properties | `FAILED` |
-| Property identity mismatch | `FAILED` |
-| API error or timeout | `FAILED` |
-| Malformed / incomplete response | `FAILED` |
-| Pagination cannot be proven complete | `FAILED` |
-| Ambiguous multiple matches | `FAILED` |
+<sub>Public portfolio copy with synthetic data only. Live account IDs, credentials and customer data are excluded. Live end-to-end CRM deployment has not been verified.</sub>
 
-An upstream error is never treated as a successful verification.
-
-## Safety controls
-
-The implementation includes:
-
-- read-only upstream requests
-- fixed upstream API origin
-- redirects rejected
-- bounded request and total verification time
-- response-size limits
-- bounded pagination
-- duplicate/repeated-relation detection
-- required total-count consistency checks
-- exact object-orientation checks
-- exact identity comparison
-- authentication on the verifier endpoint
-- credential- and identifier-free decision logging
-- failure isolation so logging cannot change the verification outcome
-
-## Endpoint
-
-```text
-POST /verify-property-associations
-```
-
-Example request:
-
-```bash
-curl -X POST "https://YOUR_WORKER_URL/verify-property-associations" \
-  -H "Authorization: Bearer YOUR_VERIFIER_SHARED_SECRET" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "propertyIdentityKey": "EXAMPLE-PROPERTY-KEY",
-    "expectedContactId": "EXAMPLE-CONTACT-ID",
-    "expectedOpportunityId": "EXAMPLE-OPPORTUNITY-ID"
-  }'
-```
-
-Successful verification:
-
-```json
-{
-  "verifierResult": "VERIFIED",
-  "verifiedPropertyId": "example-property-id",
-  "reason": "EXACT_ASSOCIATIONS_CONFIRMED"
-}
-```
-
-A failed verification returns `FAILED` with a reason code and no verified Property ID.
-
-## Configuration
-
-Runtime values are injected through environment bindings. No production values belong in source control.
-
-Required values:
-
-| Binding | Purpose |
-| --- | --- |
-| `GHL_READ_ONLY_TOKEN` | Read-only CRM API token |
-| `VERIFIER_SHARED_SECRET` | Authenticates requests to the verifier |
-| `GHL_LOCATION_ID` | CRM location/account identifier |
-
-For local development, copy the example file:
-
-```bash
-cp .dev.vars.example .dev.vars
-```
-
-Then replace the placeholders locally. `.dev.vars` is git-ignored.
-
-## Run locally
-
-Requirements:
-
-- Node.js 22+
-- Wrangler
-
-Install and test:
-
-```bash
-npm install
-npm test
-npm run check:deploy
-```
-
-Start a local Worker:
-
-```bash
-npm run dev
-```
-
-## Test evidence
-
-The sanitized portfolio copy passes the full suite:
-
-```text
-41/41 tests independently reproduced offline on 2026-10-29
-Independent Node --test run on 2026-10-29: 41 passed, 0 failed; 23 top-level test declarations
-0 failed
-```
-
-Coverage includes successful verification, wrong Contact/Opportunity relationships, different Properties, identity mismatch, malformed JSON, malformed upstream responses, reversed relation orientation, upstream 401/403/500 responses, timeouts, network errors, authentication failure, multi-page association scans, pagination safety limits, repeated pages, inconsistent totals, multiple candidate Properties, credential-safe logging, and failures after an earlier partial match.
-
-## Repository structure
-
-```text
-.
-├── src/
-│   └── worker.js
-├── test/
-│   └── worker.test.js
-├── .dev.vars.example
-├── .gitignore
-├── package.json
-├── wrangler.toml
-└── README.md
-```
-
-## Validation status
-
-The core matching and failure-handling logic was tested offline; the dated result is above. Production integration of this sanitized copy remains unverified.
-
-## What this project demonstrates
-
-This is less about writing a large amount of code and more about designing a reliable control around a commercial workflow:
-
-- API integration
-- structured-data validation
-- CRM relationship modelling
-- exception handling
-- verification boundaries
-- human-in-the-loop design
-- test discipline
-- security-minded failure behaviour
-- translating an operating problem into an auditable technical control
-
-## Author
-
-**Joel Gabriel Pascal**  
-Enterprise GTM & Strategic Sales | AI | SaaS | APIs | Data | Revenue Systems
-
-My broader work focuses on the commercial-technical layer between enterprise GTM, CRM/revenue systems, automation, APIs, verification controls, and practical AI-enabled workflows.
-
-## Engineering review package (2026-10-29)
-
-- [Architecture, trust boundaries, failure decisions](docs/architecture.md)
-- [Synthetic request/response demonstration and local commands](docs/synthetic-demo.md)
-
-These are documentation examples and source inspection, not new test executions or production certification.
-
-- [Security and operational readiness checkpoint (2026-10-29)](docs/READINESS_2026-10-29.md)
+**Joel Gabriel Pascal** · [Portfolio](https://false-ash-26c.notion.site/Joel-Pascal-portfolio-Enterprise-Sales-GTM-and-Practical-AI-40b5622002f981709ab3e773187085f3) · [GitHub](https://github.com/JoelGPascal)
