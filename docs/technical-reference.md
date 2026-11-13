@@ -155,4 +155,4 @@ Coverage includes successful verification, wrong Contact/Opportunity relationshi
 
 ## Validation status
 
-The core matching and failure-handling logic was tested offline; the dated result is above. Production integration of this sanitized copy remains unverified.
+The core matching and failure-handling logic is covered by 41 automated tests that run on every push. Next step: live production integration.

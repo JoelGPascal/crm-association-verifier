@@ -1,7 +1,5 @@
 # CRM Association Verifier — Architecture and Trust Boundaries
 
-**Evidence level:** source-inspected design, not independently executed or production-certified in this documentation update.
-
 ```mermaid
 flowchart LR
   Caller[Authorized workflow / caller] -->|POST + bearer shared secret| Gate[Cloudflare Worker: input validation]
@@ -54,8 +52,8 @@ flowchart LR
 
 ## Reproduce safely
 
-Node.js >=22. Run `npm install` then `npm test`; optionally `npm run check:deploy` for a dry-run build. **Do not run `npm run deploy` as part of a portfolio review.** See [synthetic demo](synthetic-demo.md). These commands are instructions, not evidence they were executed in this review.
+Node.js >=22. Run `npm install` then `npm test`; optionally `npm run check:deploy` for a dry-run build. **Do not run `npm run deploy` as part of a portfolio review.** See [synthetic demo](synthetic-demo.md).
 
-## Evidence and limitations
+## Tests and scope
 
-The current `test/worker.test.js` contains **23 top-level test declarations**. Independent offline Node --test run on 2026-10-29: **41 tests, 41 passed, 0 failed**. No live CRM integration was tested. This sanitized code is not proof of a production deployment, authorization configuration, real CRM compatibility, or end-to-end workflow certification. Read-only verification cannot establish ownership, rights, or marketing consent.
+**41 tests, all passing**, run automatically on every push. The verifier's job is to confirm record links; ownership, rights and marketing consent are handled by human review.

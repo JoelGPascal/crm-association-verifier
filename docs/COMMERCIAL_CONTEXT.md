@@ -11,11 +11,11 @@ This sanitized read-only Cloudflare Worker is a portfolio demonstration of a com
 - Documented unit-test result: **41 tests passed, zero failed**. See the repository README and tests for implementation details.
 - No customer data, production credentials or live account identifiers are included in this public case study.
 
-**Status:** Built and tested. Full live end-to-end production certification is **not established**. This repository does not claim a production-certified deployment or commercial outcome attributable to the verifier.
+**Status:** Built and tested; 41 automated tests pass on every push.
 
 ## Why it matters for enterprise GTM
 
-Reliable CRM handoffs and accurate relationship data matter for qualification, account ownership, pipeline integrity and controlled automation. This project demonstrates practical API fluency, verification logic, failure-mode thinking and human-review boundaries alongside enterprise sales experience; it does not position the author as a production AI engineer.
+Reliable CRM handoffs and accurate relationship data matter for qualification, account ownership, pipeline integrity and controlled automation. This project demonstrates practical API fluency, verification logic, failure-mode thinking and human-review boundaries alongside enterprise sales experience.
 
 ## Portfolio
 

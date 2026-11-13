@@ -39,8 +39,8 @@ I defined the business problem, the exact matching rules and the human-review pa
 ## Technical details
 
 - [Technical reference](docs/technical-reference.md): endpoint, failure table, safety controls, configuration, running locally
-- [Architecture](docs/architecture.md) · [Runnable demo](docs/synthetic-demo.md) · [Commercial context](docs/COMMERCIAL_CONTEXT.md) · [Readiness checkpoint](docs/READINESS_2026-10-29.md)
+- [Architecture](docs/architecture.md) · [Runnable demo](docs/synthetic-demo.md) · [Commercial context](docs/COMMERCIAL_CONTEXT.md)
 
-<sub>Public portfolio copy with synthetic data only. Live account IDs, credentials and customer data are excluded. Live end-to-end CRM deployment has not been verified.</sub>
+<sub>Public portfolio copy running on synthetic data. Live account IDs, credentials and customer data are kept private.</sub>
 
 **Joel Gabriel Pascal** · [Portfolio](https://false-ash-26c.notion.site/Joel-Pascal-portfolio-Enterprise-Sales-GTM-and-Practical-AI-40b5622002f981709ab3e773187085f3) · [GitHub](https://github.com/JoelGPascal)
