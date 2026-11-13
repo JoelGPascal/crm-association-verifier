@@ -4,8 +4,8 @@
 
 This repository demonstrates a commercial control problem solved with structured-data validation, CRM API reads, explicit failure states, and human review boundaries.
 
-- [Architecture diagram](architecture.md)
-- [Synthetic demo](synthetic-demo.md)
+- [Architecture diagram](docs/architecture.md)
+- [Synthetic demo](docs/synthetic-demo.md)
 - [LinkedIn](https://www.linkedin.com/in/joelgabrielpascal/)
 
-**Status:** sanitized code with 41 passing automated tests.
+**Status:** sanitized code and tests; not claimed as live end-to-end production certified.

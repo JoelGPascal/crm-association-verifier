@@ -1,6 +1,6 @@
 # Reproducible synthetic association walkthrough
 
-All identifiers are fictional. This walkthrough shows the expected result for each case.
+All identifiers are fabricated. This is an **expected-behavior illustration**, not a captured live CRM run.
 
 ## Contract example
 
