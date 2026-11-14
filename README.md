@@ -44,3 +44,9 @@ I defined the business problem, the exact matching rules and the human-review pa
 <sub>Public portfolio copy with synthetic data only. Live account IDs, credentials and customer data are excluded. Live end-to-end CRM deployment has not been verified.</sub>
 
 **Joel Gabriel Pascal** · [Portfolio](https://false-ash-26c.notion.site/Joel-Pascal-portfolio-Enterprise-Sales-GTM-and-Practical-AI-40b5622002f981709ab3e773187085f3) · [GitHub](https://github.com/JoelGPascal)
+
+## Role in the broader system — 14 November 2026
+
+This repository is the narrow relationship-verification component of PDH business automation around third-party GoHighLevel. It is distinct from JARVIS's assistant/dashboard and JOEL X's career engine. Its read-only decision result does not itself authorize, send or execute a CRM workflow.
+
+The [technical reference](docs/technical-reference.md) documents the request contract, configuration bindings, limits and failure behavior. [Readiness](docs/READINESS_2026-10-29.md) is a dated checkpoint. A test badge supports only the workflow/run it links to; current production deployment and GHL association compatibility were not inspected during this documentation expansion.
